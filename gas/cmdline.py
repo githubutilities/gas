@@ -14,7 +14,7 @@ from watchdog.events import PatternMatchingEventHandler
 def run_module(module, function=None):
 	if function is not None: # run it as a module
 		module = os.sep.join(module.split('.'))
-		pwd = os.path.dirname(os.path.abspath(__file__))
+		pwd = os.getcwd()
 
 		module_path = os.path.join(pwd, module)
 		if os.path.isdir(module_path):
@@ -28,6 +28,10 @@ def run_module(module, function=None):
 			getattr(module, function)()
 	else:
 		try:
+			# Change the sys.path
+			# https://docs.python.org/3/using/cmdline.html#cmdoption-m
+			sys.path.insert(0, '.')
+
 			runpy.run_module(module, run_name="__main__", alter_sys=True)
 			# Reference
 			# https://docs.python.org/2/library/runpy.html
@@ -44,20 +48,9 @@ class ChangeAndRunEventHandler(PatternMatchingEventHandler):
 		self.module = module
 		self.function = function
 		self.proc = None
+		self._start_process()
 
-	def on_any_event(self, event):
-		pass
-
-	def on_moved(self, event):
-		pass
-
-	def on_created(self, event):
-		pass
-
-	def on_deleted(self, event):
-		pass
-
-	def on_modified(self, event):
+	def _start_process(self):
 		# if previous process is still alive, kill it
 		if hasattr(self.proc, 'is_alive') and self.proc.is_alive():
 			sys.stdout.write('terminating')
@@ -72,15 +65,27 @@ class ChangeAndRunEventHandler(PatternMatchingEventHandler):
 		self.proc.start()
 		# https://docs.python.org/3/library/multiprocessing.html
 
+	def on_any_event(self, event):
+		pass
+
+	def on_moved(self, event):
+		pass
+
+	def on_created(self, event):
+		pass
+
+	def on_deleted(self, event):
+		pass
+
+	def on_modified(self, event):
+		self._start_process()
+
 def monitor_module(module, function=None):
 	logging.basicConfig(level=logging.INFO,
 						format='%(asctime)s - %(message)s',
 						datefmt='%Y-%m-%d %H:%M:%S')
 
-	path = '.'#os.sep.join(path.split('.'))
-	pwd = os.path.dirname(os.path.abspath(__file__))
-
-	module_path = os.path.join(pwd, path)
+	path = os.getcwd()
 	event_handler = ChangeAndRunEventHandler(module, function=function, patterns=['*.py'])
 	observer = Observer()
 	observer.schedule(event_handler, path, recursive=True)
@@ -94,16 +99,13 @@ def monitor_module(module, function=None):
 	observer.join()
 
 def gasd(argv=sys.argv[1:]):
-	parser = argparse.ArgumentParser(prog='gas', usage='%(prog)s <module>', 
+	parser = argparse.ArgumentParser(prog='gasd', usage='%(prog)s <module>', 
 		description=u'Central %(prog)s station debugger')
-	parser.add_argument(u'--module', nargs='?', help=u'Debug in module mode')
+	parser.add_argument(u'module', nargs=1, help=u'Debug in module mode')
 
 	opts = parser.parse_args(argv)
 
-	if opts.module:
-		monitor_module(opts.module)
-	else:
-		parser.print_help()
+	monitor_module(opts.module[0])
 
 def gas_run(argv=sys.argv[1:]):
-	gasd()
+	pass
