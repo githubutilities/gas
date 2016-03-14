@@ -18,7 +18,6 @@ class open_data(object):
 		self._mode = mode
 		self._encoding = encoding
 		self._data_path = path
-		return self._file
 
 	@property
 	def _datadir(self):
