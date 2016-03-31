@@ -21,19 +21,20 @@ class open_data(object):
 
 	@property
 	def _datadir(self):
-		if self._data_path is not None:
-			return self._data_path
-		if not hasattr(settings, 'DATA_PATH'):
-			raise DataPathException('Data path not set')
-		# Get class name by `self.__class__.__name__`
-		if not hasattr(self, '_open_data__datadir'):
-			self.__datadir = settings.DATA_PATH
-			if not os.path.exists(self.__datadir):
-				os.makedirs(self.__datadir)
-		return self.__datadir
+		if self._data_path is None:
+			if not hasattr(settings, 'DATA_PATH'):
+				raise DataPathException('Data path not set')
+			else:
+				self._data_path = settings.DATA_PATH
+
+		if not os.path.exists(self._data_path):
+			os.makedirs(self._data_path)
+
+		return self._data_path
 
 	@property
 	def _file(self):
+		# Get class name by `self.__class__.__name__`
 		if not hasattr(self, '_open_data__file'):
 			filepath = os.path.join(self._datadir, self._filename)
 			self.__file = codecs.open(filepath, self._mode, self._encoding)
